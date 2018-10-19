@@ -25,10 +25,10 @@ def main(argv):
     fileinput = open(inputfile, 'r')
     fileoutput = open(outputfile, 'w+')
     for inputline in fileinput:
-        res1 = re.search(r'(.*)\s=\s(.*);', inputline)
-        if res1 is not None:
-            res_tmp1 = res1.group(1)
-            res_tmp2 = res1.group(2)
+        res = re.search(r'(.*)\s=\s(.*);', inputline)
+        if res is not None:
+            res_tmp1 = res.group(1)
+            res_tmp2 = res.group(2)
             res2 = re.split(r'\.', res_tmp1)
             ptmp = dic
             for res2line in res2:
@@ -38,19 +38,34 @@ def main(argv):
                     ptmp = ptmp[res2line]
                 else:
                     ptmp[res2line] = res_tmp2
-        res11 = re.search(r'(.*)(\.destroy\(\));', inputline)
-        if res11 is not None:
-            res_tmp11 = res11.group(1)
-            res22 = re.split(r'\.', res_tmp11)
+        res = re.search(r'(.*)\.(instance\(".*"\))\.destroy\(\);', inputline)
+        if res is not None:
+            res_tmp1 = res.group(1)
+            res_tmp2 = res.group(2)
+            res2 = re.split(r'\.', res_tmp1)
             ptmp = dic
-            for res22line in res22:
-                if res22line != res22[-1]:
-                    if res22line not in ptmp:
-                        print("error")
-                        sys.exit()
-                    ptmp = ptmp[res22line]
+            for res2line in res2:
+                ptmp = ptmp[res2line]
+            if res_tmp2 in ptmp.keys():
+                del ptmp[res_tmp2]
+            res3 = re.search(r'instance\((.*)\)', res_tmp2)
+            if res3 is not None:
+                res_tmp3 = res3.group(1)
+                res_tmp3 = "create(" + res_tmp3 + ")"
+                if res_tmp3 in ptmp.keys():
+                    del ptmp[res_tmp3]
+        res = re.search(r'(.*\.create\(".*"\));', inputline)
+        if res is not None:
+            res_tmp1 = res.group(1)
+            res2 = re.split(r'\.', res_tmp1)
+            ptmp = dic
+            for res2line in res2:
+                if res2line != res2[-1]:
+                    if res2line not in ptmp:
+                        ptmp[res2line] = {}
+                    ptmp = ptmp[res2line]
                 else:
-                    del ptmp[res22line]
+                    ptmp[res2line] = ""
     list_all('', dic, fileoutput)
 
 
@@ -64,9 +79,11 @@ def list_all(output, dict_in, fileoutput):
             else:
                 output2 += "." + str(key)
             list_all(output2, dict_in[key], fileoutput)
-
     else:
-        fileoutput.write(str(output) + " = " + str(dict_in) + "\n")
+        if dict_in == "":
+            fileoutput.write(str(output) + ";\n")
+        else:
+            fileoutput.write(str(output) + " = " + str(dict_in) + ";\n")
 
 
 main(sys.argv)
